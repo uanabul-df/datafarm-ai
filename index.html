@@ -394,7 +394,7 @@ pdfInput.addEventListener("change", (event) => {
   }
 
   selectedFile = file;
-  chatMessage.value = `📎 ${file.name} siap dikirim\n`; // tampilkan di value
+  chatMessage.value = `📎 ${file.name}\n`; // tampilkan di value
   chatMessage.focus();
   chatMessage.selectionStart = chatMessage.selectionEnd = chatMessage.value.length; // cursor di bawah
 });
@@ -461,4 +461,5 @@ window.onload = () => {
 </script>
 </body>
 </html>
+
 
