@@ -147,7 +147,15 @@ body.dark .sidebar-footer span {
 
 .typing { font-style: italic; opacity: 0.7; }
 
-.chat-input { display: flex; padding: 1rem; border-top: 1px solid var(--border); background: var(--header-bg); }
+.chat-input {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-top: 1px solid var(--border);
+  background: var(--header-bg);
+  gap: 0.5rem;
+}
+
 .chat-input textarea {
   flex: 1;
   padding: 0.8rem 1rem;
@@ -161,8 +169,22 @@ body.dark .sidebar-footer span {
   color: var(--text);
   font-family: 'Poppins', sans-serif;
   min-height: 20px;
-  max-height: 20px;
+  max-height: 40px;
   overflow-y: auto;
+}
+
+.attach-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--text);
+  transition: transform 0.2s;
+}
+
+.attach-btn:hover {
+  transform: scale(1.2);
+  color: #1d4ed8; /* biru terang saat hover */
 }
 
 /* Sidebar & Header Shadow */
@@ -186,6 +208,7 @@ body.dark .message.bot a {
   <div class="sidebar-header">
     <div class="sidebar-title">
       <img src="assets/brainstorm.png" alt="logo" style="width:24px;height:24px;">
+      <img src="file:///Users/agungtrinanda/Downloads/brainstorm.png" alt="logo">
       Lumina
     </div>
     <div class="sidebar-icons">
@@ -207,6 +230,8 @@ body.dark .message.bot a {
   </div>
   <div class="chat-content" id="chatContent"></div>
   <form class="chat-input" id="chatForm">
+    <button type="button" class="attach-btn" id="attachBtn">📎</button>
+    <input type="file" id="pdfInput" accept="application/pdf" style="display: none;">
     <textarea id="chatMessage" placeholder="Ask anything"></textarea>
   </form>
 </div>
@@ -222,15 +247,21 @@ const chatForm = document.getElementById("chatForm");
 const chatMessage = document.getElementById("chatMessage");
 const chatList = document.getElementById("chatList");
 const chatHeader = document.getElementById("chatHeader");
+const attachBtn = document.getElementById("attachBtn");
+const pdfInput = document.getElementById("pdfInput");
+const fileBadgeContainer = document.getElementById("fileBadge"); // div kecil di atas textarea untuk nama file
 
 let chats = JSON.parse(localStorage.getItem("chats") || "[]");
 let activeChat = localStorage.getItem("activeChat") || null;
+let selectedFile = null;
 
+// simpan chat
 function saveChats() {
   localStorage.setItem("chats", JSON.stringify(chats));
   localStorage.setItem("activeChat", activeChat);
 }
 
+// render daftar chat
 function renderChats() {
   chatList.innerHTML = "";
   chats.forEach((chat, idx) => {
@@ -254,13 +285,12 @@ function renderChats() {
   });
 }
 
+// append message ke bubble
 function appendMessage(text, sender, save = true) {
-  // bikin bubble
   const div = document.createElement("div");
   div.className = "message " + sender;
   div.innerHTML = marked.parse(text);
 
-  // link aman
   div.querySelectorAll('a').forEach(a => {
     a.setAttribute('target', '_blank');
     a.setAttribute('rel', 'noopener noreferrer');
@@ -269,12 +299,9 @@ function appendMessage(text, sender, save = true) {
   chatContent.appendChild(div);
   div.scrollIntoView({ block: "end" });
 
-  // kalau tidak perlu save (misalnya reload chat), stop di sini
   if (!save) return;
 
   let chat = chats.find(c => c.id === activeChat);
-
-  // 🚀 kalau belum ada chat aktif → bikin baru
   if (!chat) {
     const id = "chat_" + Date.now();
     activeChat = id;
@@ -282,20 +309,18 @@ function appendMessage(text, sender, save = true) {
     chats.push(chat);
   }
 
-  // simpan pesan
   chat.messages.push({ sender, text });
 
-  // 🚀 kasih judul default kalau kosong
   if (!chat.title && sender === "user") {
     chat.title = text.slice(0, 20) + (text.length > 20 ? "..." : "");
     chatHeader.textContent = chat.title;
   }
 
-  // simpan dan render
   saveChats();
   renderChats();
 }
 
+// efek typing
 function showTyping() {
   const div = document.createElement("div");
   div.className = "message bot typing";
@@ -305,6 +330,82 @@ function showTyping() {
   return div;
 }
 
+// kirim pesan
+chatForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  let message = chatMessage.value.trim();
+  if (!message && !selectedFile) return;
+
+  let bubbleText;
+  let userText;
+
+  if (selectedFile) {
+    // ada file
+    let lines = message.split("\n");
+    userText = lines.slice(1).join("\n") || ""; // baris kedua ke bawah
+    bubbleText = `📎 ${selectedFile.name}\n${userText || "(file saja)"}`;
+  } else {
+    // chat biasa
+    userText = message;
+    bubbleText = userText;
+  }
+
+  appendMessage(bubbleText, "user");
+
+  chatMessage.value = ""; // kosongkan textarea
+  selectedFile = null;
+
+  const typingDiv = showTyping();
+
+  try {
+    let body;
+    let headers = { "Authorization": "Bearer " + API_KEY };
+
+    if (selectedFile) {
+      body = new FormData();
+      body.append("file", selectedFile);
+      body.append("chatInput", userText);
+      body.append("sessionId", activeChat);
+    } else {
+      headers["Content-Type"] = "application/json";
+      body = JSON.stringify({ chatInput: userText, sessionId: activeChat });
+    }
+
+    const res = await fetch(WEBHOOK_URL, { method: "POST", headers, body });
+    const data = await res.json();
+    typingDiv.remove();
+    appendMessage(data.output || "Belum ada jawaban AI", "bot");
+  } catch (err) {
+    typingDiv.remove();
+    appendMessage("❌ Error: " + err.message, "bot");
+  }
+});
+
+// tombol attach → trigger file input
+attachBtn.addEventListener("click", () => pdfInput.click());
+
+// pilih file PDF
+pdfInput.addEventListener("change", (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  if (file.type !== "application/pdf") {
+    appendMessage("⚠️ Hanya file PDF yang didukung.", "bot");
+    return;
+  }
+
+  selectedFile = file;
+  chatMessage.value = `📎 ${file.name} siap dikirim\n`; // tampilkan di value
+  chatMessage.focus();
+  chatMessage.selectionStart = chatMessage.selectionEnd = chatMessage.value.length; // cursor di bawah
+});
+
+// ketika user mengetik, jika masih ada file info di value, biarkan tetap bisa edit
+chatMessage.addEventListener("input", () => {
+  // optional: bisa hapus placeholder otomatis jika mau
+});
+
+// chat management
 function newChat() {
   const id = "chat_" + Date.now();
   activeChat = id;
@@ -337,52 +438,17 @@ function deleteChat(id) {
   renderChats();
 }
 
-function toggleSidebar() {
-  sidebar.classList.toggle("hidden");
-  chatContainer.classList.toggle("expanded");
-}
-
+// theme toggle
 function toggleTheme() {
   document.body.classList.toggle("dark");
   localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light");
 }
 
+// Enter → kirim, Shift+Enter → newline
 chatMessage.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
     chatForm.dispatchEvent(new Event("submit"));
-  }
-});
-
-chatForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const message = chatMessage.value.trim();
-  if (!message) return;
-  appendMessage(message, "user");
-  chatMessage.value = "";
-
-  if (!WEBHOOK_URL) {
-    appendMessage("⚠️ Webhook URL belum diatur", "bot");
-    return;
-  }
-
-  const typingDiv = showTyping();
-
-  try {
-    const res = await fetch(WEBHOOK_URL, {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json", 
-        "Authorization": "Bearer " + API_KEY
-      },
-      body: JSON.stringify({ sessionId: activeChat, chatInput: message })
-    });
-    const data = await res.json();
-    typingDiv.remove();
-    appendMessage(data.output || "Belum ada jawaban AI", "bot");
-  } catch (err) {
-    typingDiv.remove();
-    appendMessage("❌ Error: " + err.message, "bot");
   }
 });
 
