@@ -123,6 +123,25 @@ body {
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
+.sidebar-footer {
+  padding: 0.8rem;
+  font-size: 13px;
+  text-align: center;
+  border-top: 1px solid var(--border);
+  background: var(--sidebar-bg);
+  color: var(--text);
+  opacity: 0.8;
+}
+
+.sidebar-footer span {
+  font-weight: 600;
+  color: #15803d; /* hijau di light mode */
+}
+
+body.dark .sidebar-footer span {
+  color: #4ade80; /* hijau terang saat dark mode */
+}
+
 /* Highlight nominal */
 .message.bot span.nominal { color: green; font-weight: 600; }
 
@@ -167,13 +186,17 @@ body.dark .message.bot a {
   <div class="sidebar-header">
     <div class="sidebar-title">
       <img src="assets/brainstorm.png" alt="logo" style="width:24px;height:24px;">
-      DataFarm
+      Lumina
     </div>
     <div class="sidebar-icons">
       <button onclick="newChat()">➕</button>
     </div>
   </div>
   <div class="chat-list" id="chatList"></div>
+
+  <div class="sidebar-footer">
+    Powered by <span>DataFarm</span>
+  </div>
 </div>
 
 <div class="chat-container" id="chatContainer">
@@ -244,7 +267,7 @@ function appendMessage(text, sender, save = true) {
   });
 
   chatContent.appendChild(div);
-  div.scrollIntoView({ behavior: "smooth", block: "end" });
+  div.scrollIntoView({ block: "end" });
 
   // kalau tidak perlu save (misalnya reload chat), stop di sini
   if (!save) return;
@@ -373,4 +396,3 @@ window.onload = () => {
 </script>
 </body>
 </html>
-
