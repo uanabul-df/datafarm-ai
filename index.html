@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lumina AI</title>
-<!-- Font Poppins keren dan modern -->
+
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
@@ -161,11 +161,11 @@ body {
 
 .sidebar-footer span {
   font-weight: 600;
-  color: #15803d; /* hijau di light mode */
+  color: #15803d; 
 }
 
 body.dark .sidebar-footer span {
-  color: #4ade80; /* hijau terang saat dark mode */
+  color: #4ade80; 
 }
 
 /* Highlight nominal */
@@ -222,12 +222,12 @@ body.dark .sidebar-footer span {
 
 /* Link di chat */
 .message.bot a {
-  color: #1d4ed8; /* biru terang di light mode */
+  color: #1d4ed8; 
   text-decoration: underline;
 }
 
 body.dark .message.bot a {
-  color: #60a5fa; /* biru terang agar kontras di dark mode */
+  color: #60a5fa;
 }
 
 </style>
@@ -322,7 +322,7 @@ function appendMessage(text, sender, save = true) {
   chatContent.appendChild(div);
   div.scrollIntoView({ block: "end" });
 
-  // kalau tidak perlu save (misalnya reload chat), stop di sini
+  
   if (!save) return;
 
   let chat = chats.find(c => c.id === activeChat);
@@ -338,7 +338,7 @@ function appendMessage(text, sender, save = true) {
   // simpan pesan
   chat.messages.push({ sender, text });
 
-  // 🚀 kasih judul default kalau kosong
+
   if (!chat.title && sender === "user") {
     chat.title = text.slice(0, 20) + (text.length > 20 ? "..." : "");
     chatHeader.textContent = chat.title;
@@ -479,4 +479,5 @@ window.onload = () => {
 </script>
 </body>
 </html>
+
 
