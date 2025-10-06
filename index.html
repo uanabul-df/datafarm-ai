@@ -505,15 +505,37 @@ chatForm.addEventListener("submit", async (e) => {
   }
 });
 
+function setSidebarDefaultForDevice() {
+  const isMobile = window.matchMedia("(max-width: 768px)").matches;
+  if (isMobile) {
+    sidebar.classList.add("hidden");
+    chatContainer.classList.add("expanded");
+  } else {
+    sidebar.classList.remove("hidden");
+    chatContainer.classList.remove("expanded");
+  }
+}
+
 window.onload = () => {
-  if (!activeChat && chats.length > 0) activeChat = chats[chats.length-1].id;
+  // 🔹 load chat terakhir atau buat baru
+  if (!activeChat && chats.length > 0) activeChat = chats[chats.length - 1].id;
   if (!activeChat) newChat();
   else loadChat(activeChat);
 
-  if (localStorage.getItem("theme") === "dark") document.body.classList.add("dark");
+  // 🔹 set tema dark/light dari localStorage
+  if (localStorage.getItem("theme") === "dark")
+    document.body.classList.add("dark");
+
+  // 🔹 atur tampilan sidebar berdasarkan perangkat
+  setSidebarDefaultForDevice();
+
+  // 🔹 update otomatis kalau ukuran layar berubah
+  window.addEventListener("resize", () => {
+    clearTimeout(window._sidebarResizeTimer);
+    window._sidebarResizeTimer = setTimeout(setSidebarDefaultForDevice, 120);
+  });
 };
 </script>
 </body>
 </html>
-
 
